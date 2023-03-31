@@ -61,3 +61,18 @@ OBJ -> GLTF(오픈소스)
 
 
 최종작성일 : 2023.3.30.
+
+
+초기화 코드
+echo "# geo_A" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/shimsangwoo/geo_A.git
+git push -u origin main
+
+기존에 있는 코드
+git remote add origin https://github.com/shimsangwoo/geo_A.git
+git branch -M main
+git push -u origin main
