@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<meta name="robots" content="noindex">
+<html>
+<head>
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+<!-- <script type="text/javascript" src="https://map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=CEB52025-E065-364C-9DBA-44880E3B02B8"></script> -->
+
+<meta charset="UTF-8">
+<title>브이월드 SLD</title>
+</head>
+
+<body>
+<div style="float: left;">	
+</div>
+<div id="map" style="float: clear; width: 800px; height: 500px;" ></div>
+
+<div id="wms_image"></div>
+<script type="text/javascript">
+
+//지도 영역
+let layer = new ol.layer.Tile({
+      source:  new ol.source.OSM()
+  	 ,opacity : 0.5,
+  	 name : "mapLayer"
+});
+
+let Base = new ol.layer.Tile({
+	name : "mapLayer",
+	id : "Base",
+	source: new ol.source.XYZ({
+		url: 'https://api.vworld.kr/req/wmts/1.0.0/CEB52025-E065-364C-9DBA-44880E3B02B8/Base/{z}/{y}/{x}.png'
+	})
+}); // 기본지도 타일
+
+
+
+let view = new ol.View({
+	 projection: ol.proj.get("EPSG:4326"),
+     extent: ol.proj.get("EPSG:4326").getExtent() || undefined,
+	 center:[127.100616,37.402142],
+     zoom: 8
+});
+let map = new ol.Map({
+  layers: [Base],
+  target: document.getElementById('map'),
+  view: view
+});
+
+/* 선택시 스타일 설정*/
+let selectFeature = new ol.style.Style({
+    stroke: new ol.style.Stroke({
+        color: [00, 255, 00, .7],
+        width: 3
+    }),
+    fill: new ol.style.Fill({
+        color: [255, 00, 00, .7]
+    })
+});
+
+let sldbody = `<StyledLayerDescriptor xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0.0" xsi:schemaLocation="http://www.opengis.net/sld StyledLayerDescriptor.xsd">
+<NamedLayer>
+<Name>sop:lt_c_adsido</Name>
+<UserStyle>
+<Name>Default Styler</Name>
+<Title>광역시도경계</Title>
+<Abstract>광역시도경계</Abstract>
+<FeatureTypeStyle>
+<Rule>
+<Name>서울특별시</Name>
+<Title>서울특별시</Title>
+<Filter xmlns="http://www.opengis.net/ogc">
+<PropertyIsEqualTo>
+<PropertyName>ctprvn_cd</PropertyName>
+<Literal>11</Literal>
+</PropertyIsEqualTo>
+</Filter>
+<PolygonSymbolizer>
+<Fill>
+<CssParameter name="fill">#0000FF</CssParameter>
+<CssParameter name="fill-opacity">0.5</CssParameter>
+</Fill>
+<Stroke>
+<CssParameter name="stroke">
+<Literal xmlns="http://www.opengis.net/ogc">#6E6E6E</Literal>
+</CssParameter>
+</Stroke>
+</PolygonSymbolizer>
+</Rule>
+
+<Rule>
+<Name>경기도</Name>
+<Title>경기도</Title>
+<Filter xmlns="http://www.opengis.net/ogc">
+<PropertyIsEqualTo>
+<PropertyName>ctprvn_cd</PropertyName>
+<Literal>41</Literal>
+</PropertyIsEqualTo>
+</Filter>
+<PolygonSymbolizer>
+<Fill>
+<CssParameter name="fill">#00FF00</CssParameter>
+<CssParameter name="fill-opacity">0.5</CssParameter>
+</Fill>
+<Stroke>
+<CssParameter name="stroke">
+<Literal xmlns="http://www.opengis.net/ogc">#6E6E6E</Literal>
+</CssParameter>
+</Stroke>
+</PolygonSymbolizer>
+</Rule>
+
+<Rule>
+<Name>12 ~ 99</Name>
+<Title>12 ~ 99</Title>
+<Filter>
+<And>
+<PropertyIsGreaterThanOrEqualTo>
+<PropertyName>ctprvn_cd</PropertyName>
+<Literal>12</Literal>
+</PropertyIsGreaterThanOrEqualTo>
+<PropertyIsLessThan>
+<PropertyName>ctprvn_cd</PropertyName>
+<Literal>88</Literal>
+</PropertyIsLessThan>
+</And>
+</Filter>
+<PolygonSymbolizer>
+<Fill>
+<CssParameter name="fill">#FF0000</CssParameter>
+<CssParameter name="fill-opacity">0.3</CssParameter>
+</Fill>
+<Stroke>
+<CssParameter name="stroke">#000000</CssParameter>
+<CssParameter name="stroke-width">0.5</CssParameter>
+</Stroke>
+</PolygonSymbolizer>
+</Rule>
+</FeatureTypeStyle>
+</UserStyle>
+</NamedLayer>
+</StyledLayerDescriptor>`;
+
+let wms_title = '광역시도';
+let wms_val = 'LT_C_ADSIDO';
+wms_val = wms_val.toLowerCase();
+let wms_tile = new ol.layer.Tile({
+	name : "WMS_LAYER",
+	source : new ol.source.TileWMS({
+		url : "https://api.vworld.kr/req/wms?",
+		//url : "//2d.vworld.kr:8895/2DCache/gis/map/WMS2?",
+		params : {
+			LAYERS : wms_val,
+			STYLES : wms_val,
+			CRS : "EPSG:900913",
+			apikey : "CEB52025-E065-364C-9DBA-44880E3B02B8",
+			DOMAIN : "http://loacalhost:8080",
+			title : wms_title,
+			FORMAT : "image/png"
+			,SLD_BODY : sldbody
+			//,SLD : "http://map.vworld.kr/getXmlFile.do?fleNam=administrator_LYRIDE_0000000000032.xml"
+		}
+	})
+});
+map.addLayer(wms_tile);
+map.getView().setZoom(12);	
+let this_val = "LT_C_ADSIDO";
+let imgSrc = "http://api.vworld.kr/req/image?key=CEB52025-E065-364C-9DBA-44880E3B02B8&service=image&request=GetLegendGraphic&format=png&type=ALL&layer="+this_val+"&style="+this_val+"&SLD_BODY="+sldbody
+$('#wms_image').html("<img src='"+imgSrc+"' alt ='범례이미지' >");
+
+
+function movexy(){
+	map.getView().setCenter([x,y])
+	map.getView().setZoom(13);
+}
+
+</script>
+</body>
+</html>

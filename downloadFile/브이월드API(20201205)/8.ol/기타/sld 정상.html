@@ -1,0 +1,203 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+<!-- <script type="text/javascript" src="//map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=CEB52025-E065-364C-9DBA-44880E3B02B8"></script> -->
+
+<meta charset="UTF-8">
+<title>브이월드 SLD</title>
+</head>
+
+<body>
+<div style="float: left;">	
+</div>
+<div id="map" style="float: clear; width: 800px; height: 300px;" ></div>
+
+<script type="text/javascript">
+
+//지도 영역
+var layer = new ol.layer.Tile({
+      source:  new ol.source.OSM()
+  	 ,opacity : 0.5,
+  	 name : "mapLayer"
+});
+
+var Base = new ol.layer.Tile({
+	name : "mapLayer",
+	id : "Base",
+	source: new ol.source.XYZ({
+		url: 'https://api.vworld.kr/req/wmts/1.0.0/CEB52025-E065-364C-9DBA-44880E3B02B8/Base/{z}/{y}/{x}.png'
+	})
+}); // 기본지도 타일
+
+
+
+var view = new ol.View({
+	 projection: ol.proj.get("EPSG:4326"),
+     extent: ol.proj.get("EPSG:4326").getExtent() || undefined,
+	 center:[127.100616,37.402142],
+     zoom: 8
+});
+var map = new ol.Map({
+  layers: [Base],
+  target: document.getElementById('map'),
+  view: view
+});
+
+/* 선택시 스타일 설정*/
+var selectFeature = new ol.style.Style({
+    stroke: new ol.style.Stroke({
+        color: [00, 255, 00, .7],
+        width: 3
+    }),
+    fill: new ol.style.Fill({
+        color: [255, 00, 00, .7]
+    })
+});
+
+//var sld = '<StyledLayerDescriptor xmlns="//www.opengis.net/sld" xmlns:ogc="//www.opengis.net/ogc" xmlns:xlink="//www.w3.org/1999/xlink" xmlns:xsi="//www.w3.org/2001/XMLSchema-instance" version="1.0.0" xsi:schemaLocation="//www.opengis.net/sld StyledLayerDescriptor.xsd">  <NamedLayer>    <Name>sop:lp_pa_cbnd_bubun</Name>    <UserStyle>      <Name>lp_pa_cbnd_bubun</Name>      <FeatureTypeStyle>        <Name>name</Name>        <Rule><Title>부번</Title>          <MaxScaleDenominator>3000.0</MaxScaleDenominator>          <PolygonSymbolizer>            <Fill>              <CssParameter name="fill">#000000</CssParameter>              <CssParameter name="fill-opacity">0.4</CssParameter>            </Fill>            <Stroke>              <CssParameter name="stroke">#FFAA00</CssParameter>            </Stroke>          </PolygonSymbolizer>          <TextSymbolizer>            <Geometry>              <ogc:PropertyName>ag_geom</ogc:PropertyName>            </Geometry>            <Label>              <ogc:PropertyName>bubun</ogc:PropertyName>            </Label>            <Font>              <CssParameter name="font-family">NanumGothicExtraBold</CssParameter>              <CssParameter name="font-size">10</CssParameter>              <CssParameter name="font-style">normal</CssParameter>   </Font>            <LabelPlacement>              <PointPlacement>                <AnchorPoint>                  <AnchorPointX>0.5</AnchorPointX>                  <AnchorPointY>0.5</AnchorPointY>                </AnchorPoint>              </PointPlacement>            </LabelPlacement>            <Halo>              <Radius>1.1</Radius>              <Fill>                <CssParameter name="fill">#FFFFFF</CssParameter>                <CssParameter name="fill-opacity">0.85</CssParameter>              </Fill>            </Halo>            <Fill>              <CssParameter name="fill">#804000</CssParameter>            </Fill>          </TextSymbolizer>        </Rule>      </FeatureTypeStyle>    </UserStyle>  </NamedLayer>  <NamedLayer>    <Name>sop:lp_pa_cbnd_bonbun</Name>    <UserStyle>      <Name>lp_pa_cbnd_bonbun</Name>      <FeatureTypeStyle>        <Name>name</Name>        <Rule><Title>본번</Title>          <MaxScaleDenominator>8000.0</MaxScaleDenominator>          <PolygonSymbolizer>            <Fill>              <CssParameter name="fill">#FFFFFF</CssParameter>              <CssParameter name="fill-opacity">0.1</CssParameter>            </Fill>            <Stroke>              <CssParameter name="stroke">#FF0000</CssParameter>              <CssParameter name="stroke-width">2</CssParameter>            </Stroke>          </PolygonSymbolizer>          <TextSymbolizer>            <Geometry>              <ogc:PropertyName>ag_geom</ogc:PropertyName>            </Geometry>            <Label>              <ogc:PropertyName>bonbun</ogc:PropertyName>            </Label>            <Font>              <CssParameter name="font-family">NanumGothicExtraBold</CssParameter>              <CssParameter name="font-size">12</CssParameter>              <CssParameter name="font-style">normal</CssParameter>            </Font>            <LabelPlacement>              <PointPlacement>                <AnchorPoint>                  <AnchorPointX>0.9</AnchorPointX>                  <AnchorPointY>0.1</AnchorPointY>                </AnchorPoint>              </PointPlacement>            </LabelPlacement>            <Halo>              <Radius>2</Radius>              <Fill>                <CssParameter name="fill">#FFFFFF</CssParameter>              </Fill>            </Halo>            <Fill>              <CssParameter name="fill">#478FFC</CssParameter>            </Fill>          </TextSymbolizer></Rule>      </FeatureTypeStyle>    </UserStyle>  </NamedLayer></StyledLayerDescriptor>'
+var sld = `<StyledLayerDescriptor xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0.0" xsi:schemaLocation="http://www.opengis.net/sld StyledLayerDescriptor.xsd">
+<NamedLayer>
+<Name>sop:lp_pa_cbnd_bubun</Name>
+<UserStyle>
+<Name>lp_pa_cbnd_bubun</Name>
+<FeatureTypeStyle>
+<Name>name</Name>
+<Rule>
+<Title>부번</Title>
+<MaxScaleDenominator>3000.0</MaxScaleDenominator>
+<PolygonSymbolizer>
+<Fill>
+<CssParameter name="fill">#00FF00</CssParameter>
+<CssParameter name="fill-opacity">0.4</CssParameter>
+</Fill>
+<Stroke>
+<CssParameter name="stroke">#FFAA00</CssParameter>
+</Stroke>
+</PolygonSymbolizer>
+<TextSymbolizer>
+<Geometry>
+<ogc:PropertyName>ag_geom</ogc:PropertyName>
+</Geometry>
+<Label>
+<ogc:PropertyName>bubun</ogc:PropertyName>
+</Label>
+<Font>
+<CssParameter name="font-family">NanumGothicExtraBold</CssParameter>
+<CssParameter name="font-size">10</CssParameter>
+<CssParameter name="font-style">normal</CssParameter>
+</Font>
+<LabelPlacement>
+<PointPlacement>
+<AnchorPoint>
+<AnchorPointX>0.5</AnchorPointX>
+<AnchorPointY>0.5</AnchorPointY>
+</AnchorPoint>
+</PointPlacement>
+</LabelPlacement>
+<Halo>
+<Radius>1.1</Radius>
+<Fill>
+<CssParameter name="fill">#FFFFFF</CssParameter>
+<CssParameter name="fill-opacity">0.85</CssParameter>
+</Fill>
+</Halo>
+<Fill>
+<CssParameter name="fill">#804000</CssParameter>
+</Fill>
+</TextSymbolizer>
+</Rule>
+</FeatureTypeStyle>
+</UserStyle>
+</NamedLayer>
+<NamedLayer>
+<Name>sop:lp_pa_cbnd_bonbun</Name>
+<UserStyle>
+<Name>lp_pa_cbnd_bonbun</Name>
+<FeatureTypeStyle>
+<Name>name</Name>
+<Rule>
+<Title>본번</Title>
+<MaxScaleDenominator>8000.0</MaxScaleDenominator>
+<PolygonSymbolizer>
+<Fill>
+<CssParameter name="fill">#FFFFFF</CssParameter>
+<CssParameter name="fill-opacity">0.1</CssParameter>
+</Fill>
+<Stroke>
+<CssParameter name="stroke">#FF0000</CssParameter>
+<CssParameter name="stroke-width">2</CssParameter>
+</Stroke>
+</PolygonSymbolizer>
+<TextSymbolizer>
+<Geometry>
+<ogc:PropertyName>ag_geom</ogc:PropertyName>
+</Geometry>
+<Label>
+<ogc:PropertyName>bonbun</ogc:PropertyName>
+</Label>
+<Font>
+<CssParameter name="font-family">NanumGothicExtraBold</CssParameter>
+<CssParameter name="font-size">12</CssParameter>
+<CssParameter name="font-style">normal</CssParameter>
+</Font>
+<LabelPlacement>
+<PointPlacement>
+<AnchorPoint>
+<AnchorPointX>0.9</AnchorPointX>
+<AnchorPointY>0.1</AnchorPointY>
+</AnchorPoint>
+</PointPlacement>
+</LabelPlacement>
+<Halo>
+<Radius>2</Radius>
+<Fill>
+<CssParameter name="fill">#FFFFFF</CssParameter>
+</Fill>
+</Halo>
+<Fill>
+<CssParameter name="fill">#478FFC</CssParameter>
+</Fill>
+</TextSymbolizer>
+</Rule>
+</FeatureTypeStyle>
+</UserStyle>
+</NamedLayer>
+</StyledLayerDescriptor>`;
+
+var wms_title = '지적도';
+var wms_val = 'LP_PA_CBND_BUBUN,LP_PA_CBND_BONBUN';
+wms_val = wms_val.toLowerCase();
+var wms_tile = new ol.layer.Tile({
+	name : "WMS_LAYER",
+	source : new ol.source.TileWMS({
+		url : "https://api.vworld.kr/req/wms?",
+		//url : "//2d.vworld.kr:8895/2DCache/gis/map/WMS2?",
+		params : {
+			LAYERS : wms_val,
+			STYLES : wms_val,
+			CRS : "EPSG:900913",
+			apikey : "CEB52025-E065-364C-9DBA-44880E3B02B8",
+			DOMAIN : "//loacalhost:8080",
+			title : wms_title,
+			FORMAT : "image/png",
+			domain : "//localhost"
+			,SLD_BODY : sld
+			//,SLD : "//map.vworld.kr/getXmlFile.do?fleNam=administrator_LYRIDE_0000000000014.xml"
+		}
+	})
+});
+map.addLayer(wms_tile);
+map.getView().setZoom(17);	
+
+function movexy(){
+	map.getView().setCenter([x,y])
+	map.getView().setZoom(13);
+}
+
+
+ 
+</script>
+</body>
+</html>

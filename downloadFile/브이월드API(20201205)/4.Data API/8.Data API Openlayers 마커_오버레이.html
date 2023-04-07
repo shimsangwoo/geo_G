@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- <script type="text/javascript" src="http://map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=CEB52025-E065-364C-9DBA-44880E3B02B8&domain=http://localhost:8080"></script> -->
+<link rel="stylesheet" href="../js/ol.css" type="text/css">
+<script src="../js/ol.js"></script>
+<script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+
+<meta charset="UTF-8">
+<title>데이터 API 마커, 오버레이</title>
+</head>
+<!--
+https://openlayers.org/en/v6.4.3/build/ol.js
+https://openlayers.org/en/v5.3.0/build/ol.js
+https://openlayers.org/en/v4.6.5/build/ol.js
+https://openlayers.org/en/v3.20.1/build/ol.js
+
+https://openlayers.org/en/v6.4.3/css/ol.css
+https://openlayers.org/en/v5.3.0/css/ol.css
+https://openlayers.org/en/v4.6.5/css/ol.css
+https://openlayers.org/en/v3.20.1/css/ol.css
+-->
+<!-- 
+Data API에 반경검색 
+ -->
+<body>
+<div id="map" style="width: 800px; height: 400px;"></div>
+<div style="border: 1px solid black; float: left; width: 224px; " >
+	
+	<form id="dataForm">
+		<input type="hidden" name="key" value="CEB52025-E065-364C-9DBA-44880E3B02B8">
+		<input type="hidden" name="domain" value="http://localhost:8080">
+		<input type="hidden" name="service" value="data">
+		<input type="hidden" name="version" value="2.0">
+		<input type="hidden" name="request" value="getfeature">
+		<input type="hidden" name="format" value="json">
+		<input type="hidden" name="size" value="100">
+		<input type="hidden" name="page" value="1">
+		<input type="hidden" name="data" value="LT_P_EDRSE002">
+		<input type="hidden" name="geometry" value="true">
+		<input type="hidden" name="attribute" value="true">
+		<input type="hidden" name="crs" value="EPSG:900913">
+		<input type="hidden" name="geomfilter" value="BOX(14028876.609587036,3912653.333809428,14151175.854843318,3974414.4526638505)">
+	</form>
+</div>
+<script type="text/javascript">
+let Base = new ol.layer.Tile({
+	name : "Base",
+	source: new ol.source.XYZ({
+		url: 'http://api.vworld.kr/req/wmts/1.0.0/CEB52025-E065-364C-9DBA-44880E3B02B8/Base/{z}/{y}/{x}.png'
+	})
+}); // WMTS API 사용
+
+let olView = new ol.View({
+	center: [14149214.380024165, 4494012.047228456],//좌표계 변환
+	zoom: 14
+})// 뷰 설정
+
+
+let vmap = new ol.Map({
+	layers: [Base],
+	target: 'map',
+	view: olView
+});
+let  vectorStyle = function(feature) {
+    let  style = new ol.style.Style({
+	    stroke: new ol.style.Stroke({
+	        color: [0, 256, 0, 1],
+	        width: 5
+	    }),
+	    fill: new ol.style.Fill({
+	        color: [256, 0, 0, .7]
+	    })
+    });
+    return [style];
+}
+  
+$.ajax({
+	type: "get",
+	url: "http://api.vworld.kr/req/data",
+	data : $('#dataForm').serialize(),
+	dataType: 'jsonp',
+	async: false,
+	success: function(data) {
+		
+		// 오픈레이어스 기반 마커 설정
+	    let  vectorSource = new ol.source.Vector({features: (new ol.format.GeoJSON()).readFeatures(data.response.result.featureCollection)})
+	    													//Data API geojson 데이터를 features로 파싱
+	    let  iconStyle = new ol.style.Style({
+            image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+              anchor: [0.5, 46],
+              anchorXUnits: 'fraction',
+              anchorYUnits: 'pixels',
+              src: 'https://map.vworld.kr/images/maps/marker.png',
+              scale : 1
+            }))
+         });
+	    let  vector_layer = new ol.layer.Vector({
+	  	  source: vectorSource,
+	  	  style: iconStyle
+	  	})
+	    
+	 	vmap.addLayer(vector_layer);
+	},
+	error: function(xhr, stat, err) {}
+});
+
+vmap.getView().setCenter([14097278.195273742, 3944833.3227174818])
+vmap.getView().setZoom(10)
+
+/* 이벤트 추가 */
+vmap.on("click", function(evt) {
+	let  coordinate = evt.coordinate //좌표정보
+	let  pixel = evt.pixel
+	let  features = [];
+	
+	//선택한 픽셀정보로  feature 체크 
+  vmap.forEachFeatureAtPixel(pixel, function(feature, layer) {
+ 	
+	let  shel_ad = feature.get("shel_ad");
+	let  shel_nm = feature.get("shel_nm");
+	let  shel_tp = feature.get("shel_tp");
+	let  olId = feature.getId();
+	
+	let  olOverlay="olOverlay";
+  	
+  	if(feature!=null){
+  		
+		let  overlayElement= document.createElement("div"); // 오버레이 팝업설정 
+  		overlayElement.setAttribute("class", "overlayElement");
+  		overlayElement.setAttribute("style", "background-color: #3399CC; border: 2px solid white; color:white");
+  		overlayElement.setAttribute("onclick", "deleteOverlay('"+olOverlay+"')");
+  		overlayElement.innerHTML="<p>"+shel_ad+"</p>";
+  		overlayElement.innerHTML="<p>"+shel_nm+" "+shel_tp+"</p>";
+  		
+  		let  overlayInfo = new ol.Overlay({
+  			id:olOverlay,
+  			element:overlayElement,
+  			offset: [0, -10],
+  			position: coordinate,
+  		});
+  		if(vmap.getOverlayById(olOverlay)!=null){
+  			deleteOverlay(olOverlay);
+  		}
+  		vmap.addOverlay(overlayInfo)
+  		
+  	}
+  });
+});
+
+/**
+오버레이 삭제
+*/
+let  deleteOverlay = function(id){
+	vmap.removeOverlay(vmap.getOverlayById(id));
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<!-- 행정동 반환 코드 -->
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<script type="text/javascript" src="https://map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=CEB52025-E065-364C-9DBA-44880E3B02B8&domain=http://localhost:8080"></script>
+<script  src="https://code.jquery.com/jquery-latest.min.js"></script>
+<body>
+<div id="vMap" style="width: 600px; height: 400px; left: 0px; top: 0px"></div>
+<div>
+    <input type="hidden" name="apiKey" value="CEB52025-E065-364C-9DBA-44880E3B02B8" />
+        
+    
+    <div>
+        <p><span>지번위치 : </span><span id="geoAddress"></span> </p>
+        <br>
+        <p><span>도로위치 : </span><span id="geoRoad"></span> </p>
+
+    </div>
+
+     
+</div>
+<script type="text/javascript">
+
+$.support.cors = true;
+
+vw.ol3.MapOptions = {
+        basemapType : vw.ol3.BasemapType.GRAPHIC,
+        controlDensity : vw.ol3.DensityType.BASIC,
+        interactionDensity : vw.ol3.DensityType.FULL,
+        controlsAutoArrange : true,
+        homePosition : vw.ol3.CameraPosition,
+        initPosition : vw.ol3.CameraPosition,
+};
+vmap = new vw.ol3.Map("vMap", vw.ol3.MapOptions);
+vmap.getView().setCenter([14146386.272122687, 4526001.583379886]);
+vmap.getView().setZoom(19);
+
+let wmslayer2 = vmap.addNamedLayer("부번","lp_pa_cbnd_bubun"); //WMS 추가
+vmap.addLayer(wmslayer2)
+let wmslayer = vmap.addNamedLayer("도로명주소_건물","LT_C_SPBD"); //WMS 추가
+vmap.addLayer(wmslayer)
+
+ 
+/**
+ *  역 지오코더 호출 
+ */
+
+let addr,road;
+let geocoder_reverse = function(x,y){
+    let geoResult,addr,road,roadNo,lawNo,law;
+    
+    $('#geoRoad').html("");
+
+    $.ajax({
+        type: "get",
+        url: "https://api.vworld.kr/req/address?service=address&version=2.0&request=getaddress&format=json&type=both&crs=epsg:900913",
+        data : {apiKey : $('[name=apiKey]').val(), point : x+","+y},
+        dataType: 'jsonp',
+        success: function(data) {
+            for( i in data.response.result)
+            { 
+                addr = data.response.result[i].text;
+                level4A = data.response.result[i].structure.level4A;
+                level4AC = data.response.result[i].structure.level4AC;
+                level4L = data.response.result[i].structure.level4L;
+                level4LC = data.response.result[i].structure.level4LC;
+               
+                if(i==0){ // 지번 주소 
+                    geoResult = `지 번 주소=${addr} <br>level4A(level4AC [지번의 경우 지원안함] )=${level4A}(${level4AC})<br> level4L(level4LC [법정 읍면동명])=${level4L}(${level4LC})`;
+                    $('#geoAddress').html(geoResult);
+                    
+                }else if(i==1){//도로명 주소
+                    geoResult = `도로명 주소=${addr} <br>level4A(level4AC [행정 읍면동명])=${level4A}(${level4AC}) <br> level4L(level4LC [도로명 도로코드])=${level4L}(${level4LC})`;
+                    $('#geoRoad').html(geoResult);
+                }
+
+            }
+        },
+        beforeSend: function(){
+        },complete: function(){
+        },
+ 
+        error: function(xhr, stat, err) {}
+    });
+}
+
+let feature = new ol.Feature({
+    geometry: new ol.geom.Point([14146386.272122687, 4526001.583379886]),
+});
+
+let vectorSource = new ol.source.Vector({
+features: [feature]
+});
+/*
+기존검색결과를 제거하기 위해 키 값 생성
+*/
+let vectorLayer = new ol.layer.Vector({
+source: vectorSource
+});
+vectorLayer.setZIndex(10);
+vmap.addLayer(vectorLayer);
+ 
+
+/* 지도이동 후 지오코더 호출  */
+vmap.on("moveend", function(evt) {
+    let center = vmap.getView().getCenter();
+    feature.getGeometry().setCoordinates(center)
+    geocoder_reverse(center[0],center[1]);
+});
+ 
+ 
+</script>     
+ 
+</body>
+</html>

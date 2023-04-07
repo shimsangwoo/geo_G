@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<meta name="robots" content="noindex">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>도로명주소 attrifilter, 검색 API</title>
+<!-- <script type="text/javascript" src="https://map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=451153E4-7D0D-37EC-979D-E98C75EB50E9&domain=http://localhost:8080"></script>
+  -->
+  <script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
+  <script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+</head>
+<!--
+    검색 API 도로명 검색의 경우 도로명주소 데이터 기반으로 구축되어 있음
+
+  -->
+<body>
+<div id="map" style="width: 100%; height: 650px; left: 0px; top: 0px"></div>
+<div>
+    <label>도로명주소건물 투명도</label>
+    <input id="vworld" type="range" min="0" max="1" step="0.1" value="1">
+</div>
+<div>
+    <input type="text" name="pnu" value="경기도 성남시 분당구 판교로242">
+    <input type="button"  name="search" value="도로명주소 데이터 API(오래걸림)" onclick="callAjax()">
+    <input type="text" name="query" value="경기도 성남시 분당구 판교로242">
+    <input type="button" name="search_map" value="도로 검색 API" onclick="callSearch()">
+</div>
+ 
+<script type="text/javascript">
+
+     
+    let  Base = new ol.layer.Tile({
+		name : "Base",
+		source: new ol.source.XYZ({
+			url: 'https://api.vworld.kr/req/wmts/1.0.0/CEB52025-E065-364C-9DBA-44880E3B02B8/Base/{z}/{y}/{x}.png'
+		})
+	}); // WMTS API 사용
+  
+    let  olView = new ol.View({
+        center:[14148842.047163527, 4495357.046050029],//좌표계 변환
+        zoom: 19
+    })// 뷰 설정
+    let  map = new ol.Map({
+        layers: [Base],
+        target: 'map',
+        view: olView
+    });
+     
+    let  wms_title = '도로명주소건물';
+    let  wms_val = 'LT_C_SPBD'.toLowerCase();
+     
+    let  wms_tile = new ol.layer.Tile({
+        name : "WMS_LAYER",
+        source : new ol.source.TileWMS({
+            url : "https://api.vworld.kr/req/wms?",
+            params : {
+                LAYERS : wms_val,
+                STYLES : wms_val,
+                CRS : "EPSG:3857",
+                apikey : "CEB52025-E065-364C-9DBA-44880E3B02B8",
+                DOMAIN : "http://loacalhost:8080",
+                title : wms_title,
+                FORMAT : "image/png",
+                domain : "http://localhost"
+            }
+        })
+    });
+
+        
+    /* 폴리곤의 스타일 설정 */
+function styleFunction(feature) {
+
+    return [
+        new ol.style.Style({
+            fill: new ol.style.Fill({
+            color: 'rgba(255,255,255,0.4)'
+            }),
+            stroke: new ol.style.Stroke({
+            color: '#3399CC',
+            width: 1.25
+            }),
+            text: new ol.style.Text({
+                offsetX:0.5, //위치설정
+                offsetY:20,   //위치설정
+                font: '12px Calibri,sans-serif',
+                fill: new ol.style.Fill({ color: '#000' }),
+                stroke: new ol.style.Stroke({
+                    color: '#fff', width: 3
+                }),
+                text: feature.get('rd_nm') == null ? feature.get('road') : feature.get('rd_nm')+" "+ feature.get('buld_no') +"("+ feature.get('bd_mgt_sn')+")"
+            }),
+            image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+                anchor: [0.5, 10],
+                anchorXUnits: 'fraction',
+                anchorYUnits: 'pixels',
+                src: 'http://map.vworld.kr/images/ol3/marker_blue.png'
+            }))
+        })
+    ];
+}
+     
+    map.addLayer(wms_tile);  // 브이월드 지적도 등록 (openlayers 3.0 버전의 WMS tile layer 등록)
+
+    let  kop = document.getElementById('vworld');
+
+    kop.addEventListener('input', function() {
+        map.getLayers().forEach(function(layer){ //openlayers 에서의 name 속성값을 이용한 Layer 접근
+            if(layer.get("name")=="WMS_LAYER"){
+                layer.setOpacity(kop.value) //투명도 설정
+            }
+        });
+    });
+
+    //도로명 주소 (LT_C_SPBD) data API attrFilter=rd_nm:=:판교로|buld_no:=:242
+    let callAjax = function(){
+        let value = $("[name=pnu]").val();
+        let road= value.replace(/(([가-힣]+(시|도))( |)[가-힣]+(시|군|구)( |)[가-힣]+(구|읍|면|동))/gi,"")// "판교로 519"    
+        let roadnm = road.replace(/([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[eE]([+-]?\d+))?/gi,"").trim();
+        let roadno = road.replace(/(\S*[\u3131-\u314e|\u314f-\u3163|\uac00-\ud7a3])/gi,"").trim();
+
+        let data = "key=CEB52025-E065-364C-9DBA-44880E3B02B8&domain=http://localhost:8080&service=data&version=2.0&request=getfeature&format=json&size=10&page=1&data=LT_C_SPBD&geometry=true&attribute=true&crs=EPSG:3857"
+        data += "&attrfilter=rd_nm:=:"+roadnm+"|buld_no:=:"+roadno+"&geomfilter=BOX(13663271.680031825,3894007.9689600193,14817776.555251127,4688953.0631258525)";
+        
+        $.ajax({
+		    	type: "get",
+		    	url: "https://api.vworld.kr/req/data",
+		    	data : data,
+		    	dataType: 'jsonp',
+		    	async: false,
+                beforeSend:function(){
+                    $('input[type=button]').attr("disabled",true);
+                },
+		    	success: function(data) {
+		    	    
+		    	    let  vectorSource = new ol.source.Vector({features: (new ol.format.GeoJSON()).readFeatures(data.response.result.featureCollection)})
+		    	    		    	    
+		    		map.getLayers().forEach(function(layer){
+		    			if(layer.get("name")=="search_result"){
+		    				map.removeLayer(layer);//기존결과 삭제
+		    			}
+		    		})
+		    	    let  vector_layer = new ol.layer.Vector({
+		    	  	  source: vectorSource,
+		    	  	  style: styleFunction
+		    	  	})
+		    	    
+		    	    vector_layer.set("name","search_result");
+		    	 	map.addLayer(vector_layer);
+		       	},complete: function(){
+                    $('input[type=button]').attr("disabled",false);
+                },
+		    	error: function(xhr, stat, err) {
+                    $('input[type=button]').attr("disabled",false);
+                }
+        });
+    }
+
+	/** 이동함수 구현
+	*/
+	let move = function(x,y,z){
+		map.getView().setCenter([ x*1, y*1 ]); // 지도 이동 값에 문자열로 숫자가 들어 갈 경우 이동이 안되는 증상이 있음
+		map.getView().setZoom(z); // 줌레벨 설정
+	}
+    //category=parcel 지번검색 API 
+    let  callSearch = function(){
+        let  value = $("[name=query]").val();
+        let  data = "service=search&version=2.0&request=search&key=CEB52025-E065-364C-9DBA-44880E3B02B8&format=json&size=10&page=1&type=address&category=road&crs=EPSG:3857";
+        data += "&query="+value
+        
+        $.ajax({
+		    	type: "get",
+		    	url: "https://api.vworld.kr/req/search",
+		    	data : data,
+		    	dataType: 'jsonp',
+		    	async: false,
+		    	success: function(data) {
+		    	    let  features = new Array();
+                    for(let  o in data.response.result.items){ 
+                        //Feature 객체에 저장하여 활용 
+                        features[o] = new ol.Feature({
+                            geometry: new ol.geom.Point([data.response.result.items[o].point.x*1,data.response.result.items[o].point.y*1]),
+                            title: data.response.result.items[o].title,
+                            parcel: data.response.result.items[o].address.parcel,
+                            road: data.response.result.items[o].address.road,
+                            category: data.response.result.items[o].category,
+                            point: data.response.result.items[o].point
+                        });
+                        features[o].set("id",data.response.result.items[o].id);
+                        features[o].setStyle(styleFunction)
+                    }
+                    console.log(features[0].getGeometry().getCoordinates()[0][0])
+                    move(features[0].getGeometry().getCoordinates()[0]*1,features[0].getGeometry().getCoordinates()[1]*1, 19);
+                      
+                    let  vectorSource = new ol.source.Vector({
+                          features: features
+                    });
+                    /*
+                        기존검색결과를 제거하기 위해 키 값 생성
+                    */
+                    let  vectorLayer = new ol.layer.Vector({
+                        source: vectorSource
+                    });
+                      
+                    /*
+                        기존검색결과를 제거하기 위해 키 값 생성
+                    */
+                    vectorLayer.set("vectorLayer","search_vector")
+                      
+                    map.getLayers().forEach(function(layer){
+                        if(layer.get("vectorLayer")=="search_vector"){
+                            map.removeLayer(layer);
+                        }
+                    });
+                      
+                    map.addLayer(vectorLayer);
+		       	},
+		    	
+		    	error: function(xhr, stat, err) {}
+        });
+    }
+
+</script>
+</body>
+</html>

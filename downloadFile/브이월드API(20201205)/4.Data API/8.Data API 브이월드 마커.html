@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript" src="http://map.vworld.kr/js/vworldMapInit.js.do?version=2.0&apiKey=CEB52025-E065-364C-9DBA-44880E3B02B8&domain=http://localhost:8080"></script>
+
+<meta charset="UTF-8">
+<title>데이터 API 마커, 오버레이</title>
+</head>
+<!--
+https://openlayers.org/en/v6.4.3/build/ol.js
+https://openlayers.org/en/v5.3.0/build/ol.js
+https://openlayers.org/en/v4.6.5/build/ol.js
+https://openlayers.org/en/v3.20.1/build/ol.js
+
+https://openlayers.org/en/v6.4.3/css/ol.css
+https://openlayers.org/en/v5.3.0/css/ol.css
+https://openlayers.org/en/v4.6.5/css/ol.css
+https://openlayers.org/en/v3.20.1/css/ol.css
+-->
+<!-- 
+Data API에 반경검색 
+ -->
+<body>
+<div id="map" style="width: 800px; height: 400px;"></div>
+<div style="border: 1px solid black; float: left; width: 224px; " >
+	
+	<form id="dataForm">
+		<input type="hidden" name="key" value="CEB52025-E065-364C-9DBA-44880E3B02B8">
+		<input type="hidden" name="domain" value="http://localhost:8080">
+		<input type="hidden" name="service" value="data">
+		<input type="hidden" name="version" value="2.0">
+		<input type="hidden" name="request" value="getfeature">
+		<input type="hidden" name="format" value="json">
+		<input type="hidden" name="size" value="100">
+		<input type="hidden" name="page" value="1">
+		<input type="hidden" name="data" value="LT_P_EDRSE002">
+		<input type="hidden" name="geometry" value="true">
+		<input type="hidden" name="attribute" value="true">
+		<input type="hidden" name="crs" value="EPSG:900913">
+		<input type="hidden" name="geomfilter" value="BOX(14028876.609587036,3912653.333809428,14151175.854843318,3974414.4526638505)">
+	</form>
+</div>
+<script type="text/javascript">
+vw.ol3.MapOptions = {
+	basemapType: vw.ol3.BasemapType.GRAPHIC
+	, controlDensity: vw.ol3.DensityType.EMPTY
+	, interactionDensity: vw.ol3.DensityType.BASIC
+	, controlsAutoArrange: true
+	, homePosition: vw.ol3.CameraPosition
+	, initPosition: vw.ol3.CameraPosition
+}; 
+let vmap = new vw.ol3.Map("map",  vw.ol3.MapOptions); 
+  
+var markerLayer; // 마커를 담을 레이어 선언
+if(markerLayer==null){
+	markerLayer = new vw.ol3.layer.Marker(vmap);
+}
+markerLayer.set("name","마커레이어"); //마커레이어에 이름을 적용
+
+$.ajax({
+	type: "get",
+	url: "http://api.vworld.kr/req/data",
+	data : $('#dataForm').serialize(),
+	dataType: 'jsonp',
+	async: false,
+	success: function(data) {
+		  
+		let data_list = data.response.result.featureCollection.features
+		console.log(data_list);
+
+		data_list.forEach(function(data){
+			vw.ol3.markerOption = {
+				x : data.geometry.coordinates[0],
+				y : data.geometry.coordinates[1],
+				epsg : "EPSG:3857",
+				title : data.properties.shel_type, 
+				contents : data.properties.shel_road,
+				iconUrl : 'http://map.vworld.kr/images/ol3/marker_blue.png'
+			}; //마커 옵션 설정
+			markerLayer.addMarker(vw.ol3.markerOption);// 마커를 레이어에 등록
+		})
+
+	    
+	},complete:function(){
+		vmap.removeLayer(vmap.getLayerByName("마커레이어")) //vmap.getLayerByName(레이어명)
+		vmap.addLayer(markerLayer) //마커를 vmap에 등록
+	},
+	error: function(xhr, stat, err) {}
+});
+
+vmap.getView().setCenter([14097278.195273742, 3944833.3227174818])
+vmap.getView().setZoom(10)
+
+
+</script>
+</body>
+</html>
