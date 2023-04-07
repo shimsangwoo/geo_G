@@ -53,15 +53,21 @@ OBJ -> GLTF(오픈소스)
 
 브이월드 무료컨설팅 채성기 선임연구원/ 031-606-2544/ sg.chae@spacen.or.kr
 
-> 참조자료 : [2022 v-world tech-day]V-WORLD 2D, 3D
+> 참조자료 : [2022 v-world tech-day ]V-WORLD 2D, 3D
  오픈API 활용가이드(공간정보산업진흥원 채성기 팀장)
 
  >  [2022년 하반기 브이월드 온라인 교육 ~ 50:40] 방대한 주임 \
  [2022년 하반기 브이월드 온라인 교육 50:40 ~] 최성기 선임
 
 
-최종작성일 : 2023.3.30.
+작성일 : 2023.3.30.
 
+API가 너무 어려워서 할 수 없음
+
+작성일 : 2023. 4.8.
+
+
+https://shimsangwoo.github.io/geo_G/
 
 초기화 코드
 echo "# geo_A" >> README.md
